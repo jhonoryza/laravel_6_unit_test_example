@@ -1,0 +1,300 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Product;
+use App\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * 401 unauthenticated
+ * 403 unauthorized
+ * 404 not found
+ * 201 created
+ * 200 get, update, delete
+ * 422 data invalid or validation error
+ */
+class ProductTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected $endpoint = 'api/products';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+    }
+
+    /** @test */
+    public function paginate_function()
+    {
+        $this->withoutExceptionHandling();
+        factory(Product::class, 20)->create();
+
+        $response = $this->getJson($this->endpoint, ['Accept' => 'application/json']);
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                $this->jsonStructure()
+            );
+    }
+
+    /** @test */
+    public function show_function()
+    {
+        $this->withoutExceptionHandling();
+        factory(Product::class, 1)->create();
+        $product = Product::first();
+
+        $response = $this->getJson($this->endpoint . '/' . $product->id, ['Accept' => 'application/json']);
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+    }
+
+    private function jsonStructure()
+    {
+        return [
+            'data' => [
+                [
+                    'id',
+                    'name',
+                    'description',
+                    'stock',
+                    'category_id',
+                    'created_at'
+                ]
+            ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total'
+            ]
+        ];
+    }
+
+
+    /** @test */
+    public function store_function()
+    {
+        $this->withoutExceptionHandling();
+        $this->actingAs(factory(User::class)->create(), 'api');
+
+        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $this->assertCount(1, Product::all());
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+    }
+
+    private function data()
+    {
+        return [
+            'name' => 'Nike Shoes',
+            'description' => 'Nike Description',
+            'stock' => 2,
+            'category_id' => 1
+        ];
+    }
+
+    /** @test */
+    public function validation_function()
+    {
+        $this->actingAs(factory(User::class)->create(), 'api');
+
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['name' => '']), ['Accept' => 'application/json']);
+        $response->assertStatus(422); // message: The given data was invalid.
+        $this->assertCount(0, Product::all());
+
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['stock' => '']), ['Accept' => 'application/json']);
+        $response->assertStatus(422); // message: The given data was invalid.
+        $this->assertCount(0, Product::all());
+
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['category_id' => '']), ['Accept' => 'application/json']);
+        $response->assertStatus(422); // message: The given data was invalid.
+        $this->assertCount(0, Product::all());
+
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['description' => '']), ['Accept' => 'application/json']);
+        $this->assertCount(1, Product::all());
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+    }
+
+    /** @test */
+    public function update_function()
+    {
+        $this->actingAs(factory(User::class)->create(), 'api');
+        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+        $this->assertCount(1, Product::all());
+        $product = Product::first();
+
+        $response = $this->putJson($this->endpoint . "/{$product->id}", array_merge($this->data(), [
+            'name' => 'Puma Shoes',
+            'description' => 'Puma Description'
+        ]), ['Accept' => 'application/json']);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+    }
+
+    /** @test */
+    public function delete_function()
+    {
+        $this->actingAs(factory(User::class)->create(), 'api');
+
+        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+
+        $this->assertCount(1, Product::all());
+        $product = Product::first();
+
+        $response = $this->deleteJson($this->endpoint . "/{$product->id}", ['Accept' => 'application/json']);
+        $this->assertCount(0, Product::all());
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+    }
+
+    /** @test */
+    public function delete_not_exist_product_function()
+    {
+        $this->actingAs(factory(User::class)->create(), 'api');
+
+        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+
+        $this->assertCount(1, Product::all());
+
+        $response = $this->deleteJson($this->endpoint . '/2', ['Accept' => 'application/json']);
+        $response->assertStatus(404);
+    }
+
+    /** @test */
+    public function update_not_exist_product_function()
+    {
+        $this->actingAs(factory(User::class)->create(), 'api');
+
+        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+
+        $this->assertCount(1, Product::all());
+
+        $response = $this->putJson($this->endpoint . '/2', array_merge($this->data(), [
+            'name' => 'Puma Shoes',
+            'description' => 'Puma Description'
+        ]), ['Accept' => 'application/json']);
+        $response->assertStatus(404);
+    }
+}
