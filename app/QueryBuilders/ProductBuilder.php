@@ -35,6 +35,9 @@ class ProductBuilder extends BaseQueryBuilder
             'products.category_id',
             'products.created_at',
             'products.updated_at',
+            'products.category.id',
+            'products.category.name',
+            'products.category.parent_id',
         ];
     }
 
@@ -53,6 +56,9 @@ class ProductBuilder extends BaseQueryBuilder
             AllowedFilter::exact('category_id'),
             AllowedFilter::exact('created_at'),
             AllowedFilter::exact('updated_at'),
+            AllowedFilter::exact('category.id'),
+            AllowedFilter::exact('category.name'),
+            AllowedFilter::exact('category.parent_id'),
         ];
     }
 
@@ -71,6 +77,18 @@ class ProductBuilder extends BaseQueryBuilder
             'category_id',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    /**
+     * Get a list of allowed columns that can be used in any filter operations.
+     *
+     * @return array
+     */
+    protected function getAllowedIncludes(): array
+    {
+        return [
+            'category'
         ];
     }
 }
