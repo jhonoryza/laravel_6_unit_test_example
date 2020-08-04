@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Product;
+use App\Category;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,11 +15,11 @@ use Tests\TestCase;
  * 200 get, update, delete
  * 422 data invalid or validation error
  */
-class ApiProductTest extends TestCase
+class ApiCategoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $endpoint = 'api/products';
+    protected $endpoint = 'api/categories';
 
     protected function setUp(): void
     {
@@ -30,7 +30,7 @@ class ApiProductTest extends TestCase
     public function paginate_function()
     {
         $this->withoutExceptionHandling();
-        factory(Product::class, 20)->create();
+        factory(Category::class, 20)->create();
 
         $response = $this->getJson($this->endpoint);
         $response->assertStatus(200)
@@ -39,23 +39,14 @@ class ApiProductTest extends TestCase
             );
     }
 
-    private $fields = [
-        'id',
-        'name',
-        'description',
-        'stock',
-        'category_id',
-        'created_at'
-    ];
-
     /** @test */
     public function show_function()
     {
         $this->withoutExceptionHandling();
-        factory(Product::class, 1)->create();
-        $product = Product::first();
+        factory(Category::class, 1)->create();
+        $model = Category::first();
 
-        $response = $this->getJson($this->endpoint . '/' . $product->id);
+        $response = $this->getJson($this->endpoint . '/' . $model->id);
         $response->assertStatus(200)
             ->assertJsonStructure(
                 [
@@ -63,31 +54,6 @@ class ApiProductTest extends TestCase
                 ]
             );
     }
-
-    private function jsonStructure()
-    {
-        return [
-            'data' => [
-                '*' => $this->fields
-            ],
-            'links' => [
-                'first',
-                'last',
-                'prev',
-                'next'
-            ],
-            'meta' => [
-                'current_page',
-                'from',
-                'last_page',
-                'path',
-                'per_page',
-                'to',
-                'total'
-            ]
-        ];
-    }
-
 
     /** @test */
     public function store_function()
@@ -97,23 +63,13 @@ class ApiProductTest extends TestCase
         $this->assertAuthenticated();
 
         $response = $this->postJson($this->endpoint, $this->data());
-        $this->assertCount(1, Product::all());
+        $this->assertCount(1, Category::all());
         $response->assertStatus(201)
             ->assertJsonStructure(
                 [
                     'data' => $this->fields,
                 ]
             );
-    }
-
-    private function data()
-    {
-        return [
-            'name' => 'Nike Shoes',
-            'description' => 'Nike Description',
-            'stock' => 2,
-            'category_id' => 1
-        ];
     }
 
     /** @test */
@@ -130,36 +86,17 @@ class ApiProductTest extends TestCase
                 'name' => ["The name field is required."]
             ]
         ]);
-        $this->assertCount(0, Product::all());
+        $this->assertCount(0, Category::all());
 
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['stock' => '']));
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['parent_id' => 'asda']));
         $response->assertStatus(422); // message: The given data was invalid.
         $response->assertJson([
             "message" => "The given data was invalid.",
             "errors" => [
-                'stock' => ["The stock field is required."]
+                'parent_id' => ["The parent id must be an integer."]
             ]
         ]);
-        $this->assertCount(0, Product::all());
-
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['category_id' => '']));
-        $response->assertStatus(422); // message: The given data was invalid.
-        $response->assertJson([
-            "message" => "The given data was invalid.",
-            "errors" => [
-                'category_id' => ["The category id field is required."]
-            ]
-        ]);
-        $this->assertCount(0, Product::all());
-
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['description' => '']));
-        $this->assertCount(1, Product::all());
-        $response->assertStatus(201)
-            ->assertJsonStructure(
-                [
-                    'data' => $this->fields,
-                ]
-            );
+        $this->assertCount(0, Category::all());
     }
 
     /** @test */
@@ -175,10 +112,10 @@ class ApiProductTest extends TestCase
                     'data' => $this->fields,
                 ]
             );
-        $this->assertCount(1, Product::all());
-        $product = Product::first();
+        $this->assertCount(1, Category::all());
+        $model = Category::first();
 
-        $response = $this->putJson($this->endpoint . "/{$product->id}", array_merge($this->data(), [
+        $response = $this->putJson($this->endpoint . "/{$model->id}", array_merge($this->data(), [
             'name' => 'Puma Shoes',
             'description' => 'Puma Description'
         ]));
@@ -205,11 +142,11 @@ class ApiProductTest extends TestCase
                 ]
             );
 
-        $this->assertCount(1, Product::all());
-        $product = Product::first();
+        $this->assertCount(1, Category::all());
+        $model = Category::first();
 
-        $response = $this->deleteJson($this->endpoint . "/{$product->id}");
-        $this->assertCount(0, Product::all());
+        $response = $this->deleteJson($this->endpoint . "/{$model->id}");
+        $this->assertCount(0, Category::all());
         $response->assertStatus(200)
             ->assertJsonStructure(
                 [
@@ -232,7 +169,7 @@ class ApiProductTest extends TestCase
                 ]
             );
 
-        $this->assertCount(1, Product::all());
+        $this->assertCount(1, Category::all());
 
         $response = $this->deleteJson($this->endpoint . '/2');
         $response->assertStatus(404);
@@ -252,11 +189,10 @@ class ApiProductTest extends TestCase
                 ]
             );
 
-        $this->assertCount(1, Product::all());
+        $this->assertCount(1, Category::all());
 
         $response = $this->putJson($this->endpoint . '/2', array_merge($this->data(), [
             'name' => 'Puma Shoes',
-            'description' => 'Puma Description'
         ]));
         $response->assertStatus(404);
     }
@@ -264,15 +200,53 @@ class ApiProductTest extends TestCase
     /** @test */
     public function paginate_request_rule_function()
     {
-        factory(Product::class, 4)->create();
+        factory(Category::class, 4)->create();
 
-        $response = $this->getJson($this->endpoint . '?filter[stock]=2');
+        $response = $this->getJson($this->endpoint . '?filter[parent_id]=2');
         $response->assertStatus(200)
             ->assertJsonStructure(
                 $this->jsonStructure()
             );
 
-        $response = $this->getJson($this->endpoint . '?filter[stock]=asalaja');
+        $response = $this->getJson($this->endpoint . '?filter[parent_id]=asalaja');
         $response->assertStatus(422);
+    }
+
+    private $fields = [
+        'id',
+        'parent_id',
+        'created_at'
+    ];
+
+    private function jsonStructure()
+    {
+        return [
+            'data' => [
+                '*' => $this->fields
+            ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total'
+            ]
+        ];
+    }
+
+    private function data()
+    {
+        return [
+            'name' => 'Nike Shoes',
+            'parent_id' => null
+        ];
     }
 }
