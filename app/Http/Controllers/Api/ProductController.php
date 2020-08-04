@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductCollection;
 use App\Http\Resources\ProductResource;
 use App\Product;
+use App\QueryBuilders\ProductBuilder;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(ProductBuilder $query)
     {
-        $data = Product::jsonPaginate();
-        return (new ProductCollection($data))
+        return (new ProductCollection($query->paginate()))
             ->additional(['message' => 'success']);
     }
 
