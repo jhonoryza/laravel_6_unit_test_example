@@ -32,7 +32,7 @@ class ProductTest extends TestCase
         $this->withoutExceptionHandling();
         factory(Product::class, 20)->create();
 
-        $response = $this->getJson($this->endpoint, ['Accept' => 'application/json']);
+        $response = $this->getJson($this->endpoint);
         $response->assertStatus(200)
             ->assertJsonStructure(
                 $this->jsonStructure()
@@ -46,7 +46,7 @@ class ProductTest extends TestCase
         factory(Product::class, 1)->create();
         $product = Product::first();
 
-        $response = $this->getJson($this->endpoint . '/' . $product->id, ['Accept' => 'application/json']);
+        $response = $this->getJson($this->endpoint . '/' . $product->id);
         $response->assertStatus(200)
             ->assertJsonStructure(
                 [
@@ -66,7 +66,7 @@ class ProductTest extends TestCase
     {
         return [
             'data' => [
-                [
+                '*' => [
                     'id',
                     'name',
                     'description',
@@ -101,7 +101,7 @@ class ProductTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
-        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, $this->data());
         $this->assertCount(1, Product::all());
         $response->assertStatus(201)
             ->assertJsonStructure(
@@ -134,7 +134,7 @@ class ProductTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['name' => '']), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['name' => '']));
         $response->assertStatus(422); // message: The given data was invalid.
         $response->assertJson([
             "message" => "The given data was invalid.",
@@ -144,7 +144,7 @@ class ProductTest extends TestCase
         ]);
         $this->assertCount(0, Product::all());
 
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['stock' => '']), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['stock' => '']));
         $response->assertStatus(422); // message: The given data was invalid.
         $response->assertJson([
             "message" => "The given data was invalid.",
@@ -154,7 +154,7 @@ class ProductTest extends TestCase
         ]);
         $this->assertCount(0, Product::all());
 
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['category_id' => '']), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['category_id' => '']));
         $response->assertStatus(422); // message: The given data was invalid.
         $response->assertJson([
             "message" => "The given data was invalid.",
@@ -164,7 +164,7 @@ class ProductTest extends TestCase
         ]);
         $this->assertCount(0, Product::all());
 
-        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['description' => '']), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, array_merge($this->data(), ['description' => '']));
         $this->assertCount(1, Product::all());
         $response->assertStatus(201)
             ->assertJsonStructure(
@@ -186,7 +186,7 @@ class ProductTest extends TestCase
     {
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
-        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, $this->data());
 
         $response->assertStatus(201)
             ->assertJsonStructure(
@@ -207,7 +207,7 @@ class ProductTest extends TestCase
         $response = $this->putJson($this->endpoint . "/{$product->id}", array_merge($this->data(), [
             'name' => 'Puma Shoes',
             'description' => 'Puma Description'
-        ]), ['Accept' => 'application/json']);
+        ]));
 
         $response->assertStatus(200)
             ->assertJsonStructure(
@@ -230,7 +230,7 @@ class ProductTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
-        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, $this->data());
         $response->assertStatus(201)
             ->assertJsonStructure(
                 [
@@ -248,7 +248,7 @@ class ProductTest extends TestCase
         $this->assertCount(1, Product::all());
         $product = Product::first();
 
-        $response = $this->deleteJson($this->endpoint . "/{$product->id}", ['Accept' => 'application/json']);
+        $response = $this->deleteJson($this->endpoint . "/{$product->id}");
         $this->assertCount(0, Product::all());
         $response->assertStatus(200)
             ->assertJsonStructure(
@@ -271,7 +271,7 @@ class ProductTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
-        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, $this->data());
         $response->assertStatus(201)
             ->assertJsonStructure(
                 [
@@ -288,7 +288,7 @@ class ProductTest extends TestCase
 
         $this->assertCount(1, Product::all());
 
-        $response = $this->deleteJson($this->endpoint . '/2', ['Accept' => 'application/json']);
+        $response = $this->deleteJson($this->endpoint . '/2');
         $response->assertStatus(404);
     }
 
@@ -298,7 +298,7 @@ class ProductTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
-        $response = $this->postJson($this->endpoint, $this->data(), ['Accept' => 'application/json']);
+        $response = $this->postJson($this->endpoint, $this->data());
         $response->assertStatus(201)
             ->assertJsonStructure(
                 [
@@ -318,7 +318,22 @@ class ProductTest extends TestCase
         $response = $this->putJson($this->endpoint . '/2', array_merge($this->data(), [
             'name' => 'Puma Shoes',
             'description' => 'Puma Description'
-        ]), ['Accept' => 'application/json']);
+        ]));
         $response->assertStatus(404);
+    }
+
+    /** @test */
+    public function paginate_request_rule_function()
+    {
+        factory(Product::class, 4)->create();
+
+        $response = $this->getJson($this->endpoint . '?filter[stock]=2');
+        $response->assertStatus(200)
+            ->assertJsonStructure(
+                $this->jsonStructure()
+            );
+
+        $response = $this->getJson($this->endpoint . '?filter[stock]=asalaja');
+        $response->assertStatus(422);
     }
 }
