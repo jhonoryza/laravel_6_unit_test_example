@@ -47,15 +47,12 @@ class ProductBuilder extends BaseQueryBuilder
     {
         return [
             AllowedFilter::exact('id'),
+            AllowedFilter::exact('name'),
+            AllowedFilter::exact('description'),
+            AllowedFilter::exact('stock'),
+            AllowedFilter::exact('category_id'),
             AllowedFilter::exact('created_at'),
             AllowedFilter::exact('updated_at'),
-            AllowedFilter::exact('products.id'),
-            AllowedFilter::exact('products.name'),
-            AllowedFilter::exact('products.description'),
-            AllowedFilter::exact('products.stock'),
-            AllowedFilter::exact('products.category_id'),
-            AllowedFilter::exact('products.created_at'),
-            AllowedFilter::exact('products.updated_at'),
         ];
     }
 
