@@ -51,6 +51,7 @@ class CategoryController extends Controller
 
     public function delete(Category $category)
     {
+        $category->products()->delete();
         $category->delete();
 
         return (new CategoryResource($category))

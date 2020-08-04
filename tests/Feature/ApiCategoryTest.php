@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Category;
+use App\Product;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -134,6 +135,7 @@ class ApiCategoryTest extends TestCase
         $this->actingAs(factory(User::class)->create(), 'api');
         $this->assertAuthenticated();
 
+        // create new category
         $response = $this->postJson($this->endpoint, $this->data());
         $response->assertStatus(201)
             ->assertJsonStructure(
@@ -145,8 +147,32 @@ class ApiCategoryTest extends TestCase
         $this->assertCount(1, Category::all());
         $model = Category::first();
 
+        // create new product
+        $response = $this->postJson('api/products', [
+            'name' => 'Nike Shoes',
+            'description' => 'Nike Description',
+            'stock' => 2,
+            'category_id' => $model->id
+        ]);
+        $this->assertCount(1, Product::all());
+        $response->assertStatus(201)
+            ->assertJsonStructure(
+                [
+                    'data' => [
+                        'id',
+                        'name',
+                        'description',
+                        'stock',
+                        'category_id',
+                        'created_at'
+                    ],
+                ]
+            );
+
+        // delete that category with products
         $response = $this->deleteJson($this->endpoint . "/{$model->id}");
         $this->assertCount(0, Category::all());
+        $this->assertCount(0, Product::all());
         $response->assertStatus(200)
             ->assertJsonStructure(
                 [
