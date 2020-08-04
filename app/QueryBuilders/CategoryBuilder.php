@@ -45,6 +45,7 @@ class CategoryBuilder extends BaseQueryBuilder
     {
         return [
             AllowedFilter::exact('id'),
+            AllowedFilter::exact('name'),
             AllowedFilter::exact('parent_id'),
             AllowedFilter::exact('created_at'),
             AllowedFilter::exact('updated_at'),
@@ -60,6 +61,7 @@ class CategoryBuilder extends BaseQueryBuilder
     {
         return [
             'id',
+            'name',
             'parent_id',
             'created_at',
             'updated_at',
