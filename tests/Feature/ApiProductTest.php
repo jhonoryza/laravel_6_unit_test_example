@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Product;
 use App\User;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Laravel\Passport\Passport;
 
 /**
  * 401 unauthenticated
@@ -17,13 +19,12 @@ use Tests\TestCase;
  */
 class ApiProductTest extends TestCase
 {
-    use RefreshDatabase;
-
     protected $endpoint = 'api/products';
 
     protected function setUp(): void
     {
         parent::setUp();
+        Artisan::call('passport:install');
     }
 
     /** @test */
@@ -274,5 +275,65 @@ class ApiProductTest extends TestCase
 
         $response = $this->getJson($this->endpoint . '?filter[stock]=asalaja');
         $response->assertStatus(422);
+    }
+
+    /** @test */
+    public function unautorized()
+    {
+        factory(Product::class, 4)->create();
+
+        $endpoint = $this->endpoint;
+        $this->postJson($this->endpoint, $this->data())
+            ->assertStatus(401);
+
+        $product = Product::first();
+        $endpoint = $endpoint . "/{$product->id}";
+
+        $this->putJson($endpoint, array_merge($this->data(), [
+            'name' => 'Puma Shoes',
+            'description' => 'Puma Description'
+        ]))->assertStatus(401);
+
+        $this->deleteJson($this->endpoint . "/{$product->id}")
+            ->assertStatus(401);
+    }
+
+    /** @test */
+    public function autorized()
+    {
+        $login = ['email' => 'doe@example.com', 'password' => 'aziz'];
+
+        $response = $this->postJson('api/login', $login);
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                "user" => [
+                    'id',
+                    'name',
+                    'email',
+                    'email_verified_at',
+                    'created_at',
+                    'updated_at',
+                ],
+                 "access_token",
+                 "message"
+             ]);
+        $this->assertAuthenticated();
+
+        factory(Product::class, 4)->create();
+
+        $endpoint = $this->endpoint;
+        $this->postJson($this->endpoint, $this->data(), ['Authorization' => 'Bearer ' . $response['access_token']])
+            ->assertStatus(201);
+
+        $product = Product::first();
+        $endpoint = $endpoint . "/{$product->id}";
+
+        $this->putJson($endpoint, array_merge($this->data(), [
+            'name' => 'Puma Shoes',
+            'description' => 'Puma Description'
+        ], ['Authorization' => 'Bearer ' . $response['access_token']]))->assertStatus(200);
+
+        $this->deleteJson($this->endpoint . "/{$product->id}", [], ['Authorization' => 'Bearer ' . $response['access_token']])
+            ->assertStatus(200);
     }
 }
