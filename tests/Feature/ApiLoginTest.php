@@ -24,11 +24,11 @@ class ApiLoginTest extends TestCase
     {
         $user = factory(User::class)->create([
             'email' => 'admin@admin.com',
-            'name' => 'admin'
+            'name' => 'admin',
         ]);
         $response = $this->postJson($this->endpoint, [
             'email' => $user->email,
-            'password' => $user->password
+            'password' => 'password'
         ]);
         $response->assertStatus(200);
         $response->assertJson([
@@ -44,6 +44,10 @@ class ApiLoginTest extends TestCase
     /** @test */
     public function login_incorrect_credential_test()
     {
+        $user = factory(User::class)->create([
+            'email' => 'admin@admin.com',
+            'name' => 'admin',
+        ]);
         $response = $this->postJson($this->endpoint, [
             'email' => 'asal@asal.com',
             'password' => 'password'
